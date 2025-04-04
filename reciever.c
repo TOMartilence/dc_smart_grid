@@ -4,48 +4,35 @@
 const char* ssid = "Tomj";
 const char* password = "12345676";
 
-WiFiUDP Udp;
-unsigned int localUdpPort = 4210;  // local port to listen on
+WiFiUDP udp;
+const unsigned int localUdpPort = 4210;  // Same as sender's target port
 char incomingPacket[255];  // buffer for incoming packets
-char  replyPacket[] = "Hi there! Got the message :-)";  // a reply string to send back
 
-
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   Serial.println();
 
   Serial.printf("Connecting to %s ", ssid);
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println(" connected");
+  Serial.println("\n✅ WiFi connected");
+  Serial.print("📥 Receiver IP: ");
+  Serial.println(WiFi.localIP());
 
-  Udp.begin(localUdpPort);
-  Serial.printf("Now listening at IP %s, UDP port %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
+  udp.begin(localUdpPort);
+  Serial.printf("📡 Listening on UDP port %d\n", localUdpPort);
 }
 
-
-void loop()
-{
-  int packetSize = Udp.parsePacket();
-  if (packetSize)
-  {
-    // receive incoming UDP packets
-    Serial.printf("Received %d bytes from %s, port %d\n", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort());
-    int len = Udp.read(incomingPacket, 255);
-    if (len > 0)
-    {
-      incomingPacket[len] = 0;
+void loop() {
+  int packetSize = udp.parsePacket();
+  if (packetSize) {
+    int len = udp.read(incomingPacket, 255);
+    if (len > 0) {
+      incomingPacket[len] = 0;  // Null-terminate the string
     }
-    Serial.printf("UDP packet contents: %s\n", incomingPacket);
-
-    // send back a reply, to the IP address and port we got the packet from
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(replyPacket);
-    Udp.endPacket();
+    Serial.printf("📨 Received: %s from %s:%d\n", incomingPacket, udp.remoteIP().toString().c_str(), udp.remotePort());
   }
 }
